@@ -13,7 +13,7 @@ public class board extends JComponent {
     private Image img;
     private Graphics2D g2;
     private int currentX,currentY,oldX,oldY;
-    //change
+    private boolean updated = false;
     final static int ServerPort = 50002;
     public board() {
         setDoubleBuffered(false);
@@ -33,10 +33,16 @@ public class board extends JComponent {
                 currentX=mouseEvent.getX();
                 currentY=mouseEvent.getY();
 //                System.out.println(currentX);
-               System.out.println(currentY);
+               // System.out.println(currentY);
                if(g2!=null){
                    g2.drawLine(oldX,oldY,currentX,currentY);
                     repaint();
+                    updated = true;
+                    try{
+                    	Thread.sleep(20);
+                    }catch(Exception e){
+                    	e.printStackTrace();
+                    }
                     oldX=currentX;
                     oldY=currentY;
                 }
@@ -46,6 +52,7 @@ public class board extends JComponent {
     void paint(int oldX,int oldY,int currentX,int currentY){
         g2.drawLine(oldX,oldY,currentX,currentY);
         repaint();
+        updated = true;
 
     }
     protected void paintComponent(Graphics g){
@@ -62,7 +69,7 @@ public class board extends JComponent {
         JFrame frame=new JFrame("Drawing board");
         Container content=frame.getContentPane();
         content.setLayout(new BorderLayout());
-        board mdrawArea = new board();
+        board drawArea = new board();
 
 //        DataInputStream dis;
 //        DataOutputStream dos;
@@ -77,26 +84,32 @@ public class board extends JComponent {
             // obtaining input and out streams
             DataInputStream dis = new DataInputStream(s.getInputStream());
             DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+            // System.out.println(dos);
 
             Thread sendCoord = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     while (true) {
-                        board drawArea = new board();
+                        // board drawArea = new board();
+                        System.out.print("");
                         try {
-                            System.out.println(drawArea.currentX);
-                            System.out.println(drawArea.currentY);
-//                            if(drawArea.g2!=null){
-//                                drawArea.g2.drawLine(drawArea.oldX,drawArea.oldY,drawArea.currentX,drawArea.currentY);
-//                                drawArea.repaint();
-//                                drawArea.oldX=drawArea.currentX;
-//                                drawArea.oldY=drawArea.currentY;
-//                            }
+                        	if (drawArea.updated == true){
+	                            System.out.println(drawArea.currentX);
+	                            System.out.println(drawArea.currentY);
+	                            // System.out.println(dos);
+	                           	// if(drawArea.g2!=null){
+	                            //    drawArea.g2.drawLine(drawArea.oldX,drawArea.oldY,drawArea.currentX,drawArea.currentY);
+	                            //    drawArea.repaint();
+	                            //    drawArea.oldX=drawArea.currentX;
+	                            //    drawArea.oldY=drawArea.currentY;
+	                           	// }
 
-                            dos.writeInt(drawArea.oldX);
-                            dos.writeInt(drawArea.oldY);
-                            dos.writeInt(drawArea.currentX);
-                            dos.writeInt(drawArea.currentY);
+	                            dos.writeInt(drawArea.oldX);
+	                            dos.writeInt(drawArea.oldY);
+	                            dos.writeInt(drawArea.currentX);
+	                            dos.writeInt(drawArea.currentY);
+	                            drawArea.updated = false;
+	                        }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -107,23 +120,28 @@ public class board extends JComponent {
             Thread rcvCoord = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    board drawArea = new board();
-                    try{
-                        if (drawArea.g2 != null) {
+                    // board drawArea = new board();
+                    System.out.print("");
+                    while(true){
+	                    try{
+	                        // if (drawArea.g2 != null) {
 
-                            int oldx = dis.readInt();
-                            int oldy=dis.readInt();
-                            int currentx = dis.readInt();
-                            int currenty=dis.readInt();
-                            drawArea.paint(oldx,oldy,currentx,currenty);
-                            content.add(drawArea,BorderLayout.CENTER);
-                            frame.setSize(600,600);
-                            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                            frame.setVisible(true);
-                        }
-                    }catch (IOException e){
-                        e.printStackTrace();
-                    }
+	                            int oldx = dis.readInt();
+	                            int oldy=dis.readInt();
+	                            int currentx = dis.readInt();
+	                            int currenty=dis.readInt();
+	                            if (oldx!=drawArea.oldX || oldy != drawArea.oldY){
+		                            drawArea.paint(oldx,oldy,currentx,currenty);
+		                            content.add(drawArea,BorderLayout.CENTER);
+		                            frame.setSize(600,600);
+		                            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		                            frame.setVisible(true);
+	                        	}
+	                        // }
+	                    }catch (IOException e){
+	                        e.printStackTrace();
+	                    }
+	                }
                 }
             });
             rcvCoord.start();
@@ -131,7 +149,7 @@ public class board extends JComponent {
         }catch (IOException e){
             e.printStackTrace();
         }
-        content.add(mdrawArea,BorderLayout.CENTER);
+        content.add(drawArea,BorderLayout.CENTER);
         frame.setSize(600,600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
